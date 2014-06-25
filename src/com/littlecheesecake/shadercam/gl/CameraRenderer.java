@@ -38,7 +38,6 @@ public class CameraRenderer extends GLSurfaceView implements
 	//private final FBORenderTarget mRenderTarget = new FBORenderTarget();
 	private final OESTexture mCameraTexture = new OESTexture();
 	private final Shader mOffscreenShader = new Shader();
-	private final Shader mOnscreenShader = new Shader();
 	private int mWidth, mHeight;
 	private boolean updateTexture = false;
 	
@@ -72,8 +71,6 @@ public class CameraRenderer extends GLSurfaceView implements
 		setEGLContextClientVersion(2);
 		setRenderer(this);
 		setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
-		
-		
 	}
 	
 	@Override
@@ -88,8 +85,7 @@ public class CameraRenderer extends GLSurfaceView implements
 		//load and compile shader
 		
 		try {
-			mOffscreenShader.setProgram(R.raw.offscreen_vshader, R.raw.offscreen_fshader, mContext);
-			mOnscreenShader.setProgram(R.raw.onscreen_vshader, R.raw.onscreen_fshader, mContext);
+			mOffscreenShader.setProgram(R.raw.vshader, R.raw.fshader, mContext);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -102,11 +98,6 @@ public class CameraRenderer extends GLSurfaceView implements
 	public synchronized void onSurfaceChanged(GL10 gl, int width, int height) {
 		mWidth = width;
 		mHeight= height;
-		
-		//reinit render target
-		//if(mRenderTarget.width != mWidth || mRenderTarget.height != mHeight){
-		//	mRenderTarget.init(mWidth, mHeight);
-		//}
 		
 		//generate camera texture------------------------
 		mCameraTexture.init();
@@ -123,17 +114,20 @@ public class CameraRenderer extends GLSurfaceView implements
 		//set camera para-----------------------------------
 		int camera_width =0;
 		int camera_height =0;
+		
 		if(mCamera != null){
 			mCamera.stopPreview();
 			mCamera.release();
 			mCamera = null;
 		}
+		
 		mCamera = Camera.open();
 		try{
 			mCamera.setPreviewTexture(mSurfaceTexture);
 		}catch(IOException ioe){
 			ioe.printStackTrace();
 		}
+			
 		Camera.Parameters param = mCamera.getParameters();
 		List<Size> psize = param.getSupportedPreviewSizes();
 		if(psize.size() > 0 ){
@@ -147,12 +141,11 @@ public class CameraRenderer extends GLSurfaceView implements
 			param.setPreviewSize(psize.get(i).width, psize.get(i).height);
 			
 			camera_width = psize.get(i).width;
-			camera_height= psize.get(i).height;
-			
+			camera_height= psize.get(i).height;		
 
 		}	
 		
-		//get the camera orientaion-------------------------
+		//get the camera orientation and display dimension------------
 		if(mContext.getResources().getConfiguration().orientation == 
 				Configuration.ORIENTATION_PORTRAIT){
 			Matrix.setRotateM(mOrientationM, 0, 90.0f, 0f, 0f, 1f);
@@ -165,7 +158,7 @@ public class CameraRenderer extends GLSurfaceView implements
 			mRatio[0] = camera_width*1.0f/width;
 		}
 		
-		//start camera
+		//start camera-----------------------------------------
 		mCamera.setParameters(param);	
 		mCamera.startPreview();
 		
@@ -178,15 +171,13 @@ public class CameraRenderer extends GLSurfaceView implements
 		GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
 		
-		//render the texture to FBO
+		//render the texture to FBO if new frame is available
 		if(updateTexture){
 			mSurfaceTexture.updateTexImage();
 			mSurfaceTexture.getTransformMatrix(mTransformM);
 			
 			updateTexture = false;
-		
-			//mRenderTarget.bindFBO();
-			//GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+			
 			GLES20.glViewport(0, 0, mWidth, mHeight);
 			
 			mOffscreenShader.useProgram();
@@ -204,17 +195,6 @@ public class CameraRenderer extends GLSurfaceView implements
 			
 			renderQuad(mOffscreenShader.getHandle("aPosition"));
 		}
-		
-		//bind screen buffer into use, render the texture in FBO to screen
-		/*GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-		GLES20.glViewport(0, 0, mWidth, mHeight);
-		
-		mOnscreenShader.useProgram();
-		
-		GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mRenderTarget.getTextureId());
-		
-		renderQuad(mOnscreenShader.getHandle("aPosition"));*/
 		
 	}
 	

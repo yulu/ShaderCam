@@ -11,7 +11,6 @@ import com.littlecheesecake.shadercameraexample.R;
 
 public class MainActivity extends ActionBarActivity {
 	private CameraRenderer mRenderer;
-	//private final CameraLayer mCamera = new CameraLayer();
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -29,14 +28,12 @@ public class MainActivity extends ActionBarActivity {
 	public void onStart(){
 		super.onStart();
 
-		//mRenderer.setObserver(mCamera);
 	}
 	
 	
 	@Override
 	public void onPause(){
 		super.onPause();
-		//mCamera.onPause();
 		mRenderer.onDestroy();
 		
 	}
@@ -44,7 +41,6 @@ public class MainActivity extends ActionBarActivity {
 	@Override
 	public void onResume(){
 		super.onResume();
-		//mCamera.onResume();
 		mRenderer.onResume();
 	}
 
