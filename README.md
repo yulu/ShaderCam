@@ -123,7 +123,7 @@ private void init(){
 
 ...
 private void renderQuad(int aPosition){
-	GLES20.glVertexAttribPointer(aPosition, 2, GLES20.GL_BYTE,                                         false, 0, mFullQuadVertices);
+	GLES20.glVertexAttribPointer(aPosition, 2, GLES20.GL_BYTE, false, 0, mFullQuadVertices);
 	GLES20.glEnableVertexAttribArray(aPosition);
 	GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
 }
