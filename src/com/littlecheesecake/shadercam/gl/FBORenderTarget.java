@@ -23,20 +23,20 @@ public class FBORenderTarget {
 	/**
 	 * bind the framebuffer object to use
 	 */
-	public void bindFBO(){
+	public void bindFBO(int i){
 		GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFramebufferHandle);
 		GLES20.glViewport(0, 0, width, height);
 		GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, 
 									GLES20.GL_COLOR_ATTACHMENT0, 
 									GLES20.GL_TEXTURE_2D, 
-									mTextureHandles[0], 0);
+									mTextureHandles[i], 0);
 	}
 	
 	/**
 	 * get the texture id the camera frame rendered to
 	 */
-	public int getTextureId(){
-		return mTextureHandles[0];
+	public int getTextureId(int i){
+		return mTextureHandles[i];
 	}
 	
 	/**
@@ -53,16 +53,19 @@ public class FBORenderTarget {
 		mFramebufferHandle = handle[0];
 		GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFramebufferHandle);
 		
-		mTextureHandles = new int[1];
-		GLES20.glGenTextures(1, mTextureHandles, 0);
-		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureHandles[0]);
-		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
-		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+		mTextureHandles = new int[2];
+		GLES20.glGenTextures(2, mTextureHandles, 0);
+		for(int handler : mTextureHandles){
+			GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, handler);
+			GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+			GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+			GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+			GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+			
+			GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0, 
+					GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
+		}
 		
-		GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, width, 0, 
-				GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
 		
 	}
 	

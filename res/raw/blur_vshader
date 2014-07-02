@@ -1,0 +1,17 @@
+attribute vec2 aPosition;
+attribute highp vec2 aTexal;
+
+varying vec2 blurCoordinates[5];
+
+void main(){
+	gl_Position = vec4(aPosition, 0.0, 1.0);
+	vec2 vTextureCoord = (aPosition + 1.0) * 0.5;
+	
+	vec2 singleStepOffset = vec2(1./720., 1./1280.);
+	
+	blurCoordinates[0] = vTextureCoord;
+	blurCoordinates[1] = vTextureCoord + singleStepOffset * 1.407333;
+	blurCoordinates[2] = vTextureCoord - singleStepOffset * 1.407333;
+	blurCoordinates[3] = vTextureCoord + singleStepOffset * 3.294215;
+	blurCoordinates[4] = vTextureCoord - singleStepOffset * 3.294215;
+}

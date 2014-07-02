@@ -14,13 +14,11 @@ import android.content.res.Configuration;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
-import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Build;
 import android.util.AttributeSet;
-import android.util.Log;
 
 import com.littlecheesecake.shadercameraexample.R;
 
@@ -35,10 +33,11 @@ public class CameraRenderer extends GLSurfaceView implements
 	private Camera mCamera;
 	private SurfaceTexture mSurfaceTexture;
 	
-	//private final FBORenderTarget mRenderTarget = new FBORenderTarget();
+	private final FBORenderTarget mRenderTarget = new FBORenderTarget();
 	private final OESTexture mCameraTexture = new OESTexture();
 	private final Shader mOffscreenShader = new Shader();
 	private final Shader mOnscreenShader = new Shader();
+	private final Shader mBlurShader = new Shader();
 	private int mWidth, mHeight;
 	private boolean updateTexture = false;
 	
@@ -49,6 +48,7 @@ public class CameraRenderer extends GLSurfaceView implements
 	private float[] mTransformM = new float[16];
 	private float[] mOrientationM = new float[16];
 	private float[] mRatio = new float[2];
+	private float[] mTexal = new float[2];
 	
 	public CameraRenderer(Context context) {
 		super(context);
@@ -90,8 +90,9 @@ public class CameraRenderer extends GLSurfaceView implements
 		try {
 			mOffscreenShader.setProgram(R.raw.offscreen_vshader, R.raw.offscreen_fshader, mContext);
 			mOnscreenShader.setProgram(R.raw.onscreen_vshader, R.raw.onscreen_fshader, mContext);
+			mBlurShader.setProgram(R.raw.blur_vshader, R.raw.blur_fshader, mContext);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
+			
 			e.printStackTrace();
 		}
 			
@@ -104,9 +105,9 @@ public class CameraRenderer extends GLSurfaceView implements
 		mHeight= height;
 		
 		//reinit render target
-		//if(mRenderTarget.width != mWidth || mRenderTarget.height != mHeight){
-		//	mRenderTarget.init(mWidth, mHeight);
-		//}
+		if(mRenderTarget.width != mWidth || mRenderTarget.height != mHeight){
+			mRenderTarget.init(mWidth, mHeight);
+		}
 		
 		//generate camera texture------------------------
 		mCameraTexture.init();
@@ -148,8 +149,6 @@ public class CameraRenderer extends GLSurfaceView implements
 			
 			camera_width = psize.get(i).width;
 			camera_height= psize.get(i).height;
-			
-
 		}	
 		
 		//get the camera orientaion-------------------------
@@ -158,11 +157,15 @@ public class CameraRenderer extends GLSurfaceView implements
 			Matrix.setRotateM(mOrientationM, 0, 90.0f, 0f, 0f, 1f);
 			mRatio[1] = camera_width*1.0f/height;
 			mRatio[0] = camera_height*1.0f/width;
+			mTexal[1] = 1.0f/camera_width;
+			mTexal[0] = 1.0f/camera_height;
 		}
 		else{
 			Matrix.setRotateM(mOrientationM, 0, 0.0f, 0f, 0f, 1f);
 			mRatio[1] = camera_height*1.0f/height;
 			mRatio[0] = camera_width*1.0f/width;
+			mTexal[1] = 1.0f/camera_height;
+			mTexal[0] = 1.0f/camera_width;
 		}
 		
 		//start camera
@@ -185,36 +188,53 @@ public class CameraRenderer extends GLSurfaceView implements
 			
 			updateTexture = false;
 		
-			//mRenderTarget.bindFBO();
-			//GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-			GLES20.glViewport(0, 0, mWidth, mHeight);
+			mRenderTarget.bindFBO(0);
 			
 			mOffscreenShader.useProgram();
 			
 			int uTransformM = mOffscreenShader.getHandle("uTransformM");
 			int uOrientationM = mOffscreenShader.getHandle("uOrientationM");
-			int uRatioV = mOffscreenShader.getHandle("ratios");
+			//int uTexalV = mOffscreenShader.getHandle("aTexal");
 			
 			GLES20.glUniformMatrix4fv(uTransformM, 1, false, mTransformM, 0);
 			GLES20.glUniformMatrix4fv(uOrientationM, 1, false, mOrientationM, 0);
-			GLES20.glUniform2fv(uRatioV, 1, mRatio, 0);
+			//GLES20.glUniform2fv(uTexalV, 1, mTexal, 0);
 			
 			GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
 			GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mCameraTexture.getTextureId());
 			
 			renderQuad(mOffscreenShader.getHandle("aPosition"));
+			
+			//TODO: blur the image and render to offscreen texture, render between two textures back-and-forth
+			int t = 21;
+			for(int i = 0; i < t; i++){				
+				mRenderTarget.bindFBO((i+1)%2);
+				
+				mBlurShader.useProgram();
+				//int uTexalV2 = mBlurShader.getHandle("aTexal");
+				
+				//GLES20.glUniform2fv(uTexalV2, 1, mTexal, 0);
+				GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+				GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mRenderTarget.getTextureId(i%2));
+				
+				renderQuad(mBlurShader.getHandle("aPosition"));
+			}
+			
 		}
 		
 		//bind screen buffer into use, render the texture in FBO to screen
-		/*GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+		GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
 		GLES20.glViewport(0, 0, mWidth, mHeight);
 		
 		mOnscreenShader.useProgram();
 		
-		GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mRenderTarget.getTextureId());
+		int uRatioV = mOnscreenShader.getHandle("ratios");
 		
-		renderQuad(mOnscreenShader.getHandle("aPosition"));*/
+		GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mRenderTarget.getTextureId(1));
+		GLES20.glUniform2fv(uRatioV, 1, mRatio, 0);
+		
+		renderQuad(mOnscreenShader.getHandle("aPosition"));
 		
 	}
 	

@@ -1,12 +1,13 @@
 uniform mat4 uTransformM;
 uniform mat4 uOrientationM;
-uniform vec2 ratios;
+//uniform vec2 ratios;
 attribute vec2 aPosition;
+//attribute vec2 aTexal;
 
 varying vec2 vTextureCoord;
+//varying vec2 blurCoordinates[5];
 
 void main(){
 	gl_Position = vec4(aPosition, 0.0, 1.0);
 	vTextureCoord = (uTransformM * ((uOrientationM * gl_Position + 1.0)*0.5)).xy;
-	gl_Position.xy *= ratios;
 }

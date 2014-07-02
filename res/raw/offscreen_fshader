@@ -3,8 +3,23 @@
 precision mediump float;
 
 uniform samplerExternalOES sTexture;
+
 varying vec2 vTextureCoord;
 
 void main(){
-	gl_FragColor = texture2D(sTexture, vTextureCoord);
+
+	//wegith constant
+	const vec3 W = vec3(0.2125, 0.1754, 0.0721);
+
+	//get rgb color from texture
+	vec3 irgb = texture2D(sTexture, vTextureCoord).rgb;
+
+	float luminance = dot(irgb, W);
+	
+	if(luminance < 0.2)
+		gl_FragColor = vec4(0.1, 0.1, 0.1, 1.0);
+	else
+		gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+	
+	
 }
